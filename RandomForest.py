@@ -4,13 +4,14 @@ import seaborn as sns  # Per creare visualizzazioni
 import matplotlib.pyplot as plt  # Per la visualizzazione grafica
 from sklearn.ensemble import RandomForestClassifier  # Per il modello RandomForest
 from sklearn.model_selection import RandomizedSearchCV  # Per la ricerca dei parametri ottimali
-from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, precision_score, recall_score, f1_score  # Per valutare il modello
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, precision_score, recall_score, \
+    f1_score, auc, roc_curve  # Per valutare il modello
 from sklearn.model_selection import train_test_split  # Per dividere i dati in set di addestramento e test
 from sklearn.tree import plot_tree  # Per visualizzare gli alberi decisionali
 
 # Definizione della classe RandomForest
 class RandomForest:
-    def __init__(self, df, target_column):
+    def __init__(self, df, target_column, x_train,x_test,y_train,y_test,train_m,test_m):
         """
         Il costruttore della classe prende il dataset e il nome della colonna target come input.
         """
@@ -18,15 +19,17 @@ class RandomForest:
         self.target_column = target_column  # Assegna la colonna target
         self.model = RandomForestClassifier(class_weight='balanced')  # Inizializza il modello RandomForest con pesi bilanciati
         self.nrf = None  # Inizializza l'attributo per il modello dopo la ricerca dei parametri
-        self.x_train, self.x_test, self.y_train, self.y_test = self._prepare_data()  # Prepara i dati
+        self.x_train, self.x_test, self.y_train, self.y_test = x_train,x_test,y_train,y_test  # Prepara i dati
+        self.t_m=train_m
+        self.te_m=test_m
 
-    def _prepare_data(self):
-        """
-        Metodo per separare le features (X) dalla target (y) e dividere i dati in set di addestramento e test.
-        """
+    """def _prepare_data(self):
+        
+        #Metodo per separare le features (X) dalla target (y) e dividere i dati in set di addestramento e test.
+        
         X = self.df.drop(columns=[self.target_column])  # Rimuove la colonna target dalle feature
         y = self.df[self.target_column]  # Separa la colonna target
-        return train_test_split(X, y, test_size=0.25, random_state=42)  # Divide i dati in 75% training, 25% testing
+        return train_test_split(X, y, test_size=0.25, random_state=42)  # Divide i dati in 75% training, 25% testing"""
 
     def optimize_parameters(self):
         """
@@ -49,10 +52,19 @@ class RandomForest:
         print("Best Parameters:", self.nrf.best_params_)
         print("Best Score:", self.nrf.best_score_)
 
+        self.plot_random_forest()
+
+        # Valutazione del modello ottimizzato
+        self.evaluate_model()
+
+
     def evaluate_model(self):
-        """
-        Valuta il modello ottimizzato sui dati di addestramento e test e stampa le metriche.
-        """
+
+        self.t_m.append("Random Forest")
+        self.te_m.append("Random Forest")
+
+        #Valuta il modello ottimizzato sui dati di addestramento e test e stampa le metriche.
+        
         nrf_best = self.nrf.best_estimator_  # Prende il miglior modello trovato da RandomizedSearchCV
         y_train_pred = nrf_best.predict(self.x_train)  # Predizione sui dati di addestramento
         y_test_pred = nrf_best.predict(self.x_test)  # Predizione sui dati di test
@@ -67,17 +79,33 @@ class RandomForest:
 
         # Stampa delle metriche di valutazione per addestramento e test
         print("Accuracy (Train):", accuracy_score(self.y_train, y_train_pred))  # Accuracy per training
+        self.t_m.append(f"accuracy: {accuracy_score(self.y_train, y_train_pred)}")
         print("Accuracy (Test):", accuracy_score(self.y_test, y_test_pred))  # Accuracy per test
+        self.te_m.append(f"accuracy: {accuracy_score(self.y_test, y_test_pred)}")
         print("Precision (Train):", precision_score(self.y_train, y_train_pred))  # Precision per training
+        self.t_m.append(f"precision: {precision_score(self.y_train, y_train_pred)}")
         print("Precision (Test):", precision_score(self.y_test, y_test_pred))  # Precision per test
+        self.te_m.append(f"precision: {precision_score(self.y_test, y_test_pred)}")
         print("Recall (Train):", recall_score(self.y_train, y_train_pred))  # Recall per training
+        self.t_m.append(f"recall: {recall_score(self.y_train, y_train_pred)}")
         print("Recall (Test):", recall_score(self.y_test, y_test_pred))  # Recall per test
+        self.te_m.append(f"recall: {recall_score(self.y_test, y_test_pred)}")
         print("F1 Score (Train):", f1_score(self.y_train, y_train_pred))  # F1 Score per training
+        self.t_m.append(f"F1 Score: {f1_score(self.y_train, y_train_pred)}")
         print("F1 Score (Test):", f1_score(self.y_test, y_test_pred))  # F1 Score per test
+        self.te_m.append(f"f1_score: {f1_score(self.y_test, y_test_pred)}")
 
         # Chiamata per la visualizzazione delle matrici di confusione
         self.plot_confusion_matrix(self.y_train, y_train_pred, "Training Confusion Matrix")
         self.plot_confusion_matrix(self.y_test, y_test_pred, "Testing Confusion Matrix")
+
+        # Calcolo della curva ROC per test set
+        if hasattr(nrf_best, 'predict_proba'):
+            fpr, tpr, _ = roc_curve(self.y_test, nrf_best.predict_proba(self.x_test)[:, 1])
+            roc_auc = auc(fpr, tpr)
+            self.plot_roc_curve(fpr, tpr, roc_auc)
+        else:
+            fpr, tpr, roc_auc = None, None, None
 
         # Chiamata per la visualizzazione dell'importanza delle feature
         self.plot_feature_importance(nrf_best)
@@ -86,15 +114,16 @@ class RandomForest:
         self.plot_random_forest()
 
     def plot_confusion_matrix(self, y_true, y_pred, title):
-        """
-        Metodo per visualizzare la matrice di confusione come heatmap.
-        """
+        
+        #Metodo per visualizzare la matrice di confusione come heatmap.
+        
         cm = confusion_matrix(y_true, y_pred)  # Calcola la matrice di confusione
         plt.figure(figsize=(6, 5))  # Imposta la dimensione della figura
         sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=[0, 1], yticklabels=[0, 1])  # Crea una heatmap
         plt.title(title)  # Titolo della matrice
         plt.xlabel('Predicted Labels')  # Etichetta asse x
         plt.ylabel('True Labels')  # Etichetta asse y
+        plt.savefig(f'random_forest{title}.png', dpi=300, bbox_inches='tight')
         plt.show()  # Mostra il grafico
 
     def plot_feature_importance(self, model):
@@ -110,6 +139,7 @@ class RandomForest:
         plt.title("Feature Importance")  # Titolo del grafico
         plt.xlabel("Relative Importance")  # Etichetta asse x
         plt.ylabel("Features")  # Etichetta asse y
+        plt.savefig(f'random_forestFI.png', dpi=300, bbox_inches='tight')
         plt.show()  # Mostra il grafico
 
     def plot_random_forest(self):
@@ -126,23 +156,19 @@ class RandomForest:
         plt.figure(figsize=(20, 10))
         plot_tree(estimator, filled=True, feature_names=self.x_train.columns, class_names=['0', '1'])
         plt.title("Decision Tree of the RandomForest")
+        plt.savefig(f'random_forest.png', dpi=300, bbox_inches='tight')
         plt.show()
 
-# Funzione main che avvia il flusso del programma
-def main():
-    # Carica il dataset da un file CSV
-    ds = pd.read_csv('diabetes.csv')  # Carica il dataset chiamato 'diabetes.csv'
+    def plot_roc_curve(self, fpr, tpr, roc_auc):
+        plt.figure(figsize=(10, 6))
 
-    # Creazione dell'oggetto RandomForest, passando il dataset e la colonna target 'Outcome'
-    rf_model = RandomForest(ds, 'Outcome')
-
-    # Ottimizzazione dei parametri del modello tramite RandomizedSearchCV
-    rf_model.optimize_parameters()
-
-    # Valutazione del modello ottimizzato
-    rf_model.evaluate_model()
-
-
-# Se il file viene eseguito direttamente, avvia la funzione main
-if __name__ == "__main__":
-    main()
+        plt.plot(fpr, tpr, color='blue', lw=2, label=f'ROC curve (area = {roc_auc:.2f})')
+        plt.plot([0, 1], [0, 1], color='gray', lw=2, linestyle='--')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title('Receiver Operating Characteristic (ROC) Curve')
+        plt.legend(loc="lower right")
+        plt.savefig(f'random_forestROC.png', dpi=300, bbox_inches='tight')
+        plt.show()
