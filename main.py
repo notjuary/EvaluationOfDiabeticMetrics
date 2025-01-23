@@ -1,7 +1,7 @@
 import pandas as pd
-import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
+from sklearn.feature_selection import mutual_info_classif
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 
@@ -90,6 +90,23 @@ def models_evalutation_metrics(m,s):
             print(f"  - {metric}")
         print()  # per separare i modelli
 
+def feature_engineering(df):
+    tdf = df.copy() #copia del dataset
+    x = tdf.drop(columns='Outcome') #assegno ad x i valori di ogni colonna del dataset tranne quelli della colonna outcome
+    y = tdf['Outcome'] #assegno ad y i valori della colonna outcome
+    mi = mutual_info_classif(x, y) #calcolo la dipendenza tra x e y
+    mi_df = pd.DataFrame({'Feature': x.columns, 'Mutual Information': mi}) #creo di un nuovo dataframe con due colonne
+    mi_df = mi_df.sort_values(by='Mutual Information', ascending=False).reset_index(drop=True) #ordino il dataframe
+
+    fig, ax = plt.subplots(1, 2, figsize=(20, 8))
+    sns.heatmap(df.corr(), annot=True, cmap='magma', ax=ax[0])
+    ax[0].set_title('Correlation')
+    sns.barplot(x='Mutual Information', y='Feature', data=mi_df, ax=ax[1])
+    ax[1].set_title('Mutual Information')
+    plt.suptitle('Correlation and Mutual Information before adding a new Feature')
+    plt.tight_layout()
+    plt.show()
+
 
 def main():
     ds = pd.read_csv('diabetes.csv') #lettura dataset
@@ -101,7 +118,11 @@ def main():
     for col in ds.columns:
         ds = remove_outliers(ds, col)
 
+    feature_engineering(ds) #chiama la funzione per stamapre la matrice di correlazione con il grafico a barre
+
     find_min_max(ds)
+
+    feature_engineering(ds) #chiama la funzione per stamapre la matrice di correlazione con il grafico a barre
 
 
     x = ds.drop(columns='Outcome')
