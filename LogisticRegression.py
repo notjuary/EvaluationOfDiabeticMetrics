@@ -1,6 +1,6 @@
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, confusion_matrix, \
     classification_report, roc_curve, auc
-from sklearn.model_selection import train_test_split, RandomizedSearchCV
+from sklearn.model_selection import RandomizedSearchCV
 from sklearn.linear_model import LogisticRegression
 import numpy as np
 import matplotlib.pyplot as plt
@@ -27,19 +27,9 @@ class LogisticRegressionModel:
 
         #Definizione dei parametri per RandomizedSearchCV
         regressor = LogisticRegression(max_iter=1000)
-        params = {'penalty': ['l1', 'l2'],
-                  'solver': ['saga', 'liblinear'],
-                  'C': list(np.arange(1, 21))
-        }
-
-
+        params = {'penalty': ['l1', 'l2'],'solver': ['saga', 'liblinear'],'C': list(np.arange(1, 21))}
         #Ricerca dei migliori parametri
-        nreg = RandomizedSearchCV(
-            regressor,
-            param_distributions=params,
-            scoring='accuracy', n_jobs=-1,
-            cv=10,
-            random_state=42)
+        nreg = RandomizedSearchCV(regressor,param_distributions=params,scoring='accuracy', n_jobs=-1,cv=10,random_state=42)
 
         #Addestramento del modello
         nreg.fit(self.X_train, self.y_train)

@@ -6,7 +6,6 @@ from sklearn.ensemble import RandomForestClassifier  # Per il modello RandomFore
 from sklearn.model_selection import RandomizedSearchCV  # Per la ricerca dei parametri ottimali
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, precision_score, recall_score, \
     f1_score, auc, roc_curve  # Per valutare il modello
-from sklearn.model_selection import train_test_split  # Per dividere i dati in set di addestramento e test
 from sklearn.tree import plot_tree  # Per visualizzare gli alberi decisionali
 
 # Definizione della classe RandomForest

@@ -67,8 +67,7 @@ class DecisionTree:
         # Creo l'oggetto di tipo DecisionTreeClassifier utilizzando il valore ottimale
         dt = DecisionTreeClassifier(ccp_alpha=best_alpha)
         # Si definiscono i parametri
-        params = {'criterion': ['gini', 'entropy'], 'min_samples_split': list(np.arange(2, 51)),
-                  'min_samples_leaf': list(np.arange(2, 51))}
+        params = {'criterion': ['gini', 'entropy'], 'min_samples_split': list(np.arange(2, 51)),'min_samples_leaf': list(np.arange(2, 51))}
         # Creo un oggetto di tipo RandomizedSearchCv per cercare i parametri migliori per l'albero
         ndt = RandomizedSearchCV(dt, param_distributions=params, cv=10, n_jobs=-1, scoring='accuracy')
         # Addestra il modello sui dati forniti
