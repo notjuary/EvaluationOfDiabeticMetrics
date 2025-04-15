@@ -114,11 +114,13 @@ This project successfully implemented and evaluated machine learning models for 
 
 * `main.py`: Main script to run the analysis.
    
-* `models.py`: Contains the model implementations.
+* `DecisionTree.py`: Contains the model implementation of Decision Tree.
+
+* `LogisticRegression.py`: Contains the model implementation of Logistic Regression.
+
+* `RandomForest.py`: Contains the model implementation of Random Forest.
    
-* `utils.py`: Utility functions for data processing and evaluation.
-   
-* `data/`: Directory for the dataset.
+* `diabates.csv`: File for the dataset.
   
 
 ## Dependencies
